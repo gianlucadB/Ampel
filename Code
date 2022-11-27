@@ -1,0 +1,169 @@
+#include <Arduino.h>
+
+#define red 10
+#define yellow 7
+#define green 4
+
+
+String inputString = "";         // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
+
+int status = 2;
+
+
+unsigned long currenttime;
+unsigned long start = 0;
+String upper = "";
+const long interval = 500;
+const long interval2 = 500;
+  int counter = 0;
+
+
+
+boolean isHigh = false;
+boolean isHigh2 = false;
+
+void blink(){
+ 
+  if (currenttime - start >= interval){
+      digitalWrite(yellow, HIGH);
+      start = millis();
+      isHigh = true;
+    }
+  else if (isHigh){
+      digitalWrite(yellow, LOW);
+      start = millis();
+      isHigh = false;
+    }
+ 
+ 
+}
+
+void off(){
+  digitalWrite(red, LOW);
+  digitalWrite(yellow, LOW);
+  digitalWrite(green, LOW);
+}
+
+void allOn(){
+  digitalWrite(red, HIGH);
+  digitalWrite(yellow, HIGH);
+  digitalWrite(green, HIGH);
+}
+
+ void blinkGreen(){
+ 
+  if (counter <= 4){
+    if (currenttime - start >= interval2){
+     if (isHigh2){
+       digitalWrite(green, HIGH);
+       isHigh2 = false;
+       counter++;
+     }else{
+         digitalWrite(green, LOW);
+          start = millis();
+          isHigh2 = true;
+     }
+     start = millis();
+     counter++;
+}
+ 
+  }
+}
+
+void setup() {
+  pinMode(green, OUTPUT);  
+  pinMode(yellow, OUTPUT);
+  pinMode(red, OUTPUT);
+
+   Serial.begin(9600);
+  // reserve 200 bytes for the inputString:
+  inputString.reserve(200);
+  start = millis();
+}
+
+void loop() {
+
+  currenttime = millis();  
+  if (stringComplete) {
+    Serial.println(inputString);
+
+    if (inputString == inputString){
+      status = 2;
+      start = millis();
+    }else if(inputString == "OFF"){
+     
+      status = 0;
+
+    }else if (inputString=="BLINK"){
+      status = 1;
+    }
+
+    // clear the string:
+    inputString = "";
+    stringComplete = false;
+  }
+
+  if (status == 0){
+    off();
+  }else if(status == 1){
+    blink();
+  }else if(status == 2){
+    off();
+    digitalWrite(red, HIGH);
+    if (currenttime - start > 3000){
+      status = 3;
+      start = millis();
+    }
+  }else if (status == 3){
+    off();
+    digitalWrite(red, HIGH);
+    digitalWrite(yellow, HIGH);
+    if (currenttime - start > 2000){
+      status = 4;
+      start = millis();
+    }
+  }else if (status == 4){
+    off();
+    digitalWrite(green, HIGH);
+    if (currenttime - start > 5000){
+      status = 5;
+      start = millis();
+    }
+  }else if(status == 5){
+    off();
+    blinkGreen();
+    if(currenttime - start > 4000){
+      status = 6;
+      start = millis();
+    }
+  }
+  else if(status == 6){
+   off;
+   digitalWrite(yellow, HIGH);
+   if (currenttime - start > 2000){
+    status = 2;
+    start = millis();
+   }
+  }
+ 
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+   
+    // if the incoming character is a newline, set a flag so the main loop can
+    // do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }else{
+      if (inChar != '\r'){
+        inputString += inChar;
+      }
+   
+    }
+  }
+}
